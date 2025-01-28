@@ -1,0 +1,44 @@
+# Python bytecode
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# MacOS system files
+.DS_Store
+
+# Linux system files
+*~
+
+# Virtual Environment folders
+venv/
+env/
+*.env
+
+# IDE specific files (VS Code, PyCharm, etc.)
+.vscode/
+.idea/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Log files
+*.log
+
+# Database files
+*.sqlite3
+
+# Test coverage reports
+coverage/
+*.coveragerc
+
+# Build directories
+build/
+dist/
+*.egg-info/
+
+# Miscellaneous
+*.bak
+*.swp
+*.swo
