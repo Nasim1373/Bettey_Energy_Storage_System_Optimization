@@ -68,18 +68,6 @@ class OptimizationModel():
         self.state_of_charge = self.model.continuous_var_dict(
             (hour for hour in self.hour_set), name="state_of_charge"
         )
-        # self.discharge_cycle = self.model.binary_var_dict(
-        #     (hour for hour in self.hour_set), name="discharge_cycle_activation"
-        # )  # Binary variable for discharge cycle activation at hour i in day j month k
-        # self.charge_cycle = self.model.binary_var_dict(
-        #     (hour for hour in self.hour_set), name="charge_cycle_activation"
-        # )  # Binary variable for charge cycle activation at hour i in day j month k
-        # self.regulation_up_cycle = self.model.binary_var_dict(
-        #     (hour for hour in self.hour_set), name="regulation_up_cycle_activation"
-        # )  # Binary variable for regulation up cycle activation at hour i in day j month k
-        # self.regulation_down_cycle = self.model.binary_var_dict(
-        #     (hour for hour in self.hour_set), name="regulation_down_cycle_activation"
-        # )  # Binary variable for regulation down cycle activation at hour i in day j month k
 
     def set_objective_function(
         self,
@@ -246,73 +234,6 @@ class OptimizationModel():
             for (self.month, hour, self.day) in missing_regulation_down
         ]
 
-        # # Discharge, charge, and regulation cycle constraints: making sure the decision varibles for each of them takes value only if there is an active cycle for each category
-        # [
-        #     self.model.add_constraint(
-        #         self.quantity_discharge[hour]
-        #         <= self.q_max_d * self.discharge_cycle[hour],
-        #         f"discharge_cycle_{self.month,hour,self.day}",
-        #     )
-        #     for hour in self.hour_set
-        # ]
-        # [
-        #     self.model.add_constraint(
-        #         self.quantity_charge[hour] <= self.q_max_r * self.charge_cycle[hour],
-        #         f"charge_cycle_{self.month,hour,self.day}",
-        #     )
-        #     for hour in self.hour_set
-        # ]
-        # [
-        #     self.model.add_constraint(
-        #         self.quantity_regulation_up[hour]
-        #         <= self.q_max_d * self.regulation_up_cycle[hour],
-        #         f"quantity_regulation_up_cycle_{self.month,hour,self.day}",
-        #     )
-        #     for hour in self.hour_set
-        # ]
-        # [
-        #     self.model.add_constraint(
-        #         self.quantity_regulation_down[hour]
-        #         <= self.q_max_r * self.regulation_down_cycle[hour],
-        #         f"quantity_regulation_down_cycle_{self.month,hour,self.day}",
-        #     )
-        #     for hour in self.hour_set
-        # ]
-
-        # ## Maximum 1 cycle per day constraints
-        # [
-        #     self.model.add_constraint(
-        #         self.model.sum(self.quantity_discharge[hour] for hour in range(1, 25))
-        #         <= 1,
-        #         f"discharge_cycle_constraint_{self.month,self.day}",
-        #     )
-        
-        # ]
-        # [
-        #     self.model.add_constraint(
-        #         self.model.sum(self.quantity_charge[hour] for hour in range(1, 25)) <= 1,
-        #         f"charge_cycle_constraint_{self.month,self.day}",
-        #     )
-        
-        # ]
-        # [
-        #     self.model.add_constraint(
-        #         self.model.sum(self.quantity_regulation_up[hour] for hour in range(1, 25))
-        #         <= 1,
-        #         f"quantity_regulation_up_cycle_constraint_{self.month,self.day}",
-        #     )
-        
-        # ]
-        # [
-        #     self.model.add_constraint(
-        #         self.model.sum(
-        #             self.quantity_regulation_down[hour] for hour in range(1, 25)
-        #         )
-        #         <= 1,
-        #         f"quantity_regulation_down_cycle_constraint_{self.month,self.day}",
-        #     )
-        
-        # ]
 
         # Charge and regulation down cycle constraints to satisfy the requiremnt of having maximum 1 cycle per day
         [
