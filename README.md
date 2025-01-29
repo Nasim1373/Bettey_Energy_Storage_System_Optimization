@@ -59,6 +59,8 @@ with parameters `months`, comma-separated list of months (e.g., `11,12`), and `i
 
 The API returns a plot of the optimization model. To run unit tests, request http://127.0.0.1:8080/run-tests (make sure "api.py" is still running). The API responds with a json object indicating whether the unit tests passed successfully.
 
+![Alt text](documents/unit_test_screenshot.png)
+
 To make the requests through API, "requests" package is required. Example:
 
 ```bash
@@ -77,6 +79,9 @@ url = 'http://127.0.0.1:8080/run-tests'
 response = requests.get(url)
 print(response.json())
 ```
+
+![Alt text](documents/api_screenshot.png)
+
 
 ---
 
