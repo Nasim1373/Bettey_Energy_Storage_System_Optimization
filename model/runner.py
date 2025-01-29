@@ -17,7 +17,7 @@ class BatteryStorageOptimization:
         self.month=month # The month of running the model
         self.day=day # The day of running the model
 
-    def run(self, desired_months: list, initial_state_of_charge: float, previous_day_state: float) -> tuple:
+    def run(self, initial_state_of_charge: float, previous_day_state: float) -> tuple:
         """
         Run the optimization process for the battery storage system.
         Args:

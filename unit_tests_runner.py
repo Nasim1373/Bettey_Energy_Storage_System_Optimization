@@ -31,7 +31,6 @@ class TestCalc(unittest.TestCase):
 
         self.days = self.state_charge_df.groupby("Month")["Day"].apply(lambda x: sorted(x.unique())).to_dict()  # Extract the number of unique days
 
-
         self.hours = self.state_charge_df[
             "Hour"
         ].unique()  # Extract the number of unique hours

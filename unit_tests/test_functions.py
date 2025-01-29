@@ -5,7 +5,10 @@ class TestFunctions:
     """
     Class containing test functions for battery storage system calculations.
     """
-    def state_of_charge_check(df: pd.DataFrame, month: int, day: int, hour: int) -> float:
+
+    def state_of_charge_check(
+        df: pd.DataFrame, month: int, day: int, hour: int
+    ) -> float:
         """
         Get the state of charge for a specific time.
         Args:
@@ -32,6 +35,7 @@ class TestFunctions:
         Returns:
             float: Total recharge value.
         """
+        #  Filter DataFrame rows where the Month, Day, and Hour match the given inputs for energy charged  and regulation_down deployed
         return (
             df.loc[
                 (df["Month"] == month) & (df["Day"] == day) & (df["Hour"] == hour),
@@ -54,6 +58,7 @@ class TestFunctions:
         Returns:
             float: Total discharge value.
         """
+        #  Filter DataFrame rows where the Month, Day, and Hour match the given inputs for energy discharged and regulation_up deployed
         return (
             df.loc[
                 (df["Month"] == month) & (df["Day"] == day) & (df["Hour"] == hour),
@@ -76,6 +81,7 @@ class TestFunctions:
         Returns:
             float: Total energy value.
         """
+        #  Filter DataFrame rows where the Month, Day, and Hour match the given inputs for energy charged and discharged 
         return (
             df.loc[
                 (df["Month"] == month) & (df["Day"] == day) & (df["Hour"] == hour),
@@ -98,6 +104,8 @@ class TestFunctions:
         Returns:
             float: Regulation up value.
         """
+
+        #  Filter DataFrame rows where the Month, Day, and Hour match the given inputs for regulation_up
         return df.loc[
             (df["Month"] == month) & (df["Day"] == day) & (df["Hour"] == hour),
             "Regulation_UP",
@@ -126,11 +134,11 @@ class TestFunctions:
         """
         Calculate the number of full charge and discharge cycles for a given month and day.
         Args:
-        df: pd.DataFrame - DataFrame containing the data.
-        month: int - Month as an integer (1-12).
-        day: int - Day of the month as an integer (1-31).
-        max_d: float - Maximum discharge value.
-        max_r: float - Maximum charge value.
+            df: pd.DataFrame - DataFrame containing the data.
+            month: int - Month as an integer (1-12).
+            day: int - Day of the month as an integer (1-31).
+            max_d: float - Maximum discharge value.
+            max_r: float - Maximum charge value.
         Returns:
         int - The number of full charge and discharge cycles for the specified day and month.
         """
@@ -148,10 +156,10 @@ class TestFunctions:
             + df[(df["Day"] == day) & (df["Month"] == month)]["Regulation_UP"].sum()
         )
         # Check if the total charge equals max_r and set full_charge to 1 if true
-        if total_charge == max_r:
+        if total_charge == 2*max_r:
             full_charge = 1
         # Check if the total discharge equals max_d and set full_discharge to 1 if true
-        if total_discharge == max_d:
+        if total_discharge == 2*max_d:
             full_discharge = 1
         # If both full charge and full discharge occurred, increment the cycles counter
         if full_charge == 1 and full_discharge == 1:

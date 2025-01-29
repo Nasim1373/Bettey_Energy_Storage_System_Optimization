@@ -90,7 +90,7 @@ class OptimizationWorkflow:
         )
         # Optimize the model
         results = battery_optimization.run(
-            month, self.initial_state_of_charge, previous_day_state_of_charge_value
+            self.initial_state_of_charge, previous_day_state_of_charge_value
         )
         # Unpack the results
         (
