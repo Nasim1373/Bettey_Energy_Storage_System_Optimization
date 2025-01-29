@@ -16,11 +16,11 @@ class OptimizationWorkflow:
         - Validate the outputs of the optimization.
     """
     def __init__(self, input_path, output_path, energy_files, months, initial_state_of_charge=100):
-        self.input_path = input_path
-        self.output_path = output_path
-        self.energy_files = energy_files
-        self.months = months
-        self.initial_state_of_charge = initial_state_of_charge
+        self.input_path = input_path # Path to the input folder
+        self.output_path = output_path # Path to the output folder
+        self.energy_files = energy_files # List of energy files
+        self.months = months # List of months
+        self.initial_state_of_charge = initial_state_of_charge # Initial state of charge
 
     def validate_paths(self):
         """
@@ -41,11 +41,17 @@ class OptimizationWorkflow:
                 os.remove(os.path.join('data/output/', file))
         data_handler = DataHandler(self.input_path, self.energy_files)
         optimization_model = OptimizationModel(data_handler)
-        for month in self.months:
-            for day in data_handler.data_loader(month):
+
+        # get the set of months for which we run the model
+        set_of_months= self.months
+        for month in set_of_months:
+            # get the set of days for which we run the model
+            set_of_days=list(data_handler.data_loader(month))
+            for day in set_of_days:
+                
                 print(f"Running optimization for month {month}, day {day}")
                 # Perform optimization for the month and day
-                self.run_optimization(data_handler, optimization_model, month, day)
+                self.run_optimization(data_handler, optimization_model, month, day, set_of_months, set_of_days)
         # Update the database with output data
         data_process = DataProcess()
         data_process.connect_db(db_dir='data/database.db')
@@ -65,7 +71,7 @@ class OptimizationWorkflow:
         )
         data_process.disconnect_db()
 
-    def run_optimization(self, data_handler, optimization_model, month, day):
+    def run_optimization(self, data_handler, optimization_model, month, day, set_of_months, set_of_days):
         """
         Run the optimization model for a specific month and day.
         Args:
@@ -98,6 +104,8 @@ class OptimizationWorkflow:
             optimal_solution,
             month,
             day,
+            set_of_months,
+            set_of_days,
             q_max_d,
             q_max_r,
             interval,
@@ -112,6 +120,8 @@ class OptimizationWorkflow:
         optimal_solution,
         month,
         day,
+        months,
+        days,
         q_max_d,
         q_max_r,
         interval,
@@ -136,6 +146,8 @@ class OptimizationWorkflow:
             solution=optimal_solution,
             desired_months=month,
             desired_days=day,
+            set_of_months=months,
+            set_of_days=days,
             q_max_d=q_max_d,
             q_max_r=q_max_r,
             interval=interval,
@@ -154,6 +166,7 @@ class OptimizationWorkflow:
         )
         output_handler.save_all_outputs()
         output_handler.print_summary()
+
 
 class TestRunner:
     """
@@ -180,7 +193,7 @@ if __name__ == "__main__":
     input_path = "./data/input"
     output_path = "./data/output"
     energy_files = ["energy_prices.csv", "regulation_prices.csv"]
-    months = [1, 2]
+    months = [5,7,8,9]
 
     # Initialize and run the optimization model
     optimization_workflow = OptimizationWorkflow(

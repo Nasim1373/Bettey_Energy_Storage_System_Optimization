@@ -10,14 +10,16 @@ class OutputHandler:
         solution: object,
         desired_months: int,
         desired_days: int,
+        set_of_months: list,
+        set_of_days:list,
         q_max_d: float,
         q_max_r: float,
+        interval: list,
         energy_price_params: dict,
         regulation_up_params: dict,
         regulation_down_params: dict,
-        interval: list,
         output_path: str,
-        file_names: list,
+        file_names: list
     ):
         """
         Initialize the OutputHandler.
@@ -25,6 +27,8 @@ class OutputHandler:
             solution (object): The optimization solution.
             desired_months (int): The month for which the optimization ran.
             desired_days (int): The day for which the optimization ran.
+            set_of_months (list): The set of months for which the optimization ran.
+            set_of_days  (list): The set of days for which the optimization ran.
             q_max_d (float): Nameplate power capacity.
             q_max_r (float): Nameplate power capacity.
             energy_price_params (dict): Dictionary of energy prices.
@@ -37,6 +41,8 @@ class OutputHandler:
         self.solution = solution  # The optimization solution
         self.desired_months = desired_months  # The month for which the optimization ran.
         self.desired_days = desired_days  # The day for which the optimization ran.
+        self.set_of_months = set_of_months  # The set of months for which the optimization ran.
+        self.set_of_days = set_of_days  # The set of days for which the optimization ran.
         self.q_max_d = q_max_d  # Nameplate power capacity.
         self.q_max_r = q_max_r  # Nameplate power capacity.
         self.energy_price_params = energy_price_params  # Dictionary of energy prices
@@ -57,11 +63,11 @@ class OutputHandler:
         # Save the daily revenue to a CSV file
         schedule_daily=self.save_schedule_daily()
         # Save the total revenue to a CSV file
-        self.save_total_revenue(schedule_daily)
+        self.save_total_revenue()
         # Save the total cycles per day to a CSV file
         total_cycles_daily=self.save_total_cycle_per_day()
         # Save the total cycles per month to a CSV file
-        self.save_total_cycles(total_cycles_daily)
+        self.save_total_cycles()
 
     def save_state_of_charge(self):
         """
@@ -83,7 +89,7 @@ class OutputHandler:
         ) 
         # Append `state_of_charges` to the current data
         mode = 'w' if self.desired_months == 1 and  self.desired_days == 1 else 'a'  # 'w' (write) for the first iteration, 'a' (append) otherwise
-        header = self.desired_months == 1 and  self.desired_days==1  # Include the header only in the first write otherwise no need
+        header = self.desired_months == self.set_of_months[0] and self.desired_days == self.set_of_days[0]  # Include the header only in the first write otherwise no need
         state_of_charges.to_csv(
             self.output_path  + '/' + self.file_names[0],
             mode=mode,
@@ -120,7 +126,7 @@ class OutputHandler:
         )
         # Append `schedule` to the current data
         mode = 'w' if self.desired_months == 1 and  self.desired_days == 1 else 'a'
-        header = self.desired_months == 1 and  self.desired_days==1
+        header = self.desired_months == self.set_of_months[0] and self.desired_days == self.set_of_days[0]
         schedule.to_csv(
             self.output_path  + '/' + self.file_names[1],
             mode=mode,
@@ -192,8 +198,8 @@ class OutputHandler:
             ]
         )
         # Append `total_cycles` to the current data
-        mode = 'w' if self.desired_months == 1 and self.desired_days == 1 else 'a'
-        header = self.desired_months == 1 and  self.desired_days==1  
+        mode = 'w' if self.desired_months == self.set_of_months[0] and self.desired_days == self.set_of_days[0] else 'a'
+        header = self.desired_months == self.set_of_months[0] and self.desired_days == self.set_of_days[0]  
         total_cycles_daily.to_csv(
             self.output_path  + '/' + self.file_names[2],
             mode=mode,
@@ -218,41 +224,34 @@ class OutputHandler:
             ]
         )
         # Append `schedule_daily` to the current data
-        mode = 'w' if self.desired_months == 1 and self.desired_days == 1 else 'a'
-        header = self.desired_months == 1 and  self.desired_days==1  
+        mode = 'w' if self.desired_months == self.set_of_months[0] and self.desired_days == self.set_of_days[0] else 'a'
+        header = self.desired_months == self.set_of_months[0] and self.desired_days == self.set_of_days[0]  
         schedule_daily.to_csv(
             self.output_path  + '/' + self.file_names[4],
             mode=mode,
             header=header,
             index=False
         )
-        return schedule_daily
 
-    def save_total_revenue(self,schedule_daily):
+
+    def save_total_revenue(self):
         """
         Save the total revenue to a CSV file.
         """
-        # Create a DataFrame for total revenue schedule and save
+        # Process total revenue schedule and save
+        total_revenue=pd.read_csv(self.output_path  + '/' + self.file_names[4])
+
         total_revenue = pd.DataFrame(
-            [{"Tota_Revenue": schedule_daily["Tota_Daily_Revenue"].sum()}]
+            [{"Tota_Revenue": total_revenue["Tota_Daily_Revenue"].sum()}]
         )
         total_revenue.to_csv(self.output_path  + '/' + self.file_names[3])
 
-    def save_total_cycles(self,total_cycles_daily):
+    def save_total_cycles(self):
         """
         Save the total monthly cycles to a CSV file.
         """
-        # Create a DataFrame for total revenue schedule and save
+        # Process  total cycles per month 
+        total_cycles_daily=pd.read_csv(self.output_path  + '/' + self.file_names[2])
+
         monthly_cycles = total_cycles_daily.groupby('Month')['Total_Cycle'].sum().reset_index()
-        total_monthly_cycles = pd.DataFrame(
-            [{"Month": self.desired_months,"Tota_Monthly_Cycles": monthly_cycles["Total_Cycle"].max()}]
-        )
-        # Append `schedule_daily` to the current data
-        mode = 'w' if self.desired_months == 1 and self.desired_days == 1 else 'a'
-        header = self.desired_months == 1 and  self.desired_days==1  
-        total_monthly_cycles.to_csv(
-            self.output_path  + '/' + self.file_names[5],
-            mode=mode,
-            header=header,
-            index=False
-        )
+        monthly_cycles.to_csv(self.output_path  + '/' + self.file_names[5])

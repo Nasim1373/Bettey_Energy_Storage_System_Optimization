@@ -37,7 +37,7 @@ class BidOptimizationAPI:
             # Convert months to a list of integers
             months = [int(month.strip()) for month in months_param.split(',')]
             # Convert initial state of charge to a float
-            initial_state_of_charge = request.args.get('initial_state_of_charge', 100)
+            initial_state_of_charge = int(request.args.get('initial_state_of_charge', 100))
             # Initialize and execute the optimization model
             optimization_workflow = OptimizationWorkflow(
                 input_path=self.default_input_path,
