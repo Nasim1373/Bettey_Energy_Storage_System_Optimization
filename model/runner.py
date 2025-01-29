@@ -17,7 +17,7 @@ class BatteryStorageOptimization:
         self.month=month # The month of running the model
         self.day=day # The day of running the model
 
-    def run(self, desired_months: list, initial_state_of_charge: float) -> tuple:
+    def run(self, desired_months: list, initial_state_of_charge: float, previous_day_state: float) -> tuple:
         """
         Run the optimization process for the battery storage system.
         Args:
@@ -44,6 +44,7 @@ class BatteryStorageOptimization:
             self.data_handler.missing_energy,
             self.data_handler.missing_regulation_up,
             self.data_handler.missing_regulation_down,
+            previous_day_state
         )
         # Solve optimization model
         model,solution, q_max_d, q_max_r = (

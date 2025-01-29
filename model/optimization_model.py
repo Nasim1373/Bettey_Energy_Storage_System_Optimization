@@ -13,6 +13,7 @@ class OptimizationModel():
         q_max_r: float = 100.0,
         lambda_c: float = 0.9,
         lambda_reg: float = 0.1,
+    
     ):
         """
         Initialize the OptimizationModel.
@@ -31,7 +32,6 @@ class OptimizationModel():
         self.q_max_r = q_max_r  # Maximum charge quantity
         self.lambda_c = lambda_c  # Efficiency of charge/discharge
         self.lambda_reg = lambda_reg  # Efficiency of regulation
-    
     def create_variables(self, interval: list,desired_month:str,day:int):
         """
         Create decision variables for the optimization model.
@@ -56,14 +56,22 @@ class OptimizationModel():
         self.quantity_charge = self.model.continuous_var_dict(
             (hour for hour in self.hour_set), name="quantity_charge"
         )
-        # Continuous variable for regulation up quantity at hour i in day j month k
+        # Continuous variable for regulation up capacity reserved at hour i in day j month k
+        self.quantity_regulation_up_capcity = self.model.continuous_var_dict(
+            (hour for hour in self.hour_set), name="quantity_regulation_up_capacity"
+        )
+        # Continuous variable for regulation down capacity reserved at hour i in day j month k
+        self.quantity_regulation_down_capacity = self.model.continuous_var_dict(
+            (hour for hour in self.hour_set), name="quantity_regulation_down_capacity"
+
+        )
+        # Continuous variable for regulation up quantity deployed  at hour i in day j month k
         self.quantity_regulation_up = self.model.continuous_var_dict(
-            (hour for hour in self.hour_set), name="quantity_regulation_up"
+            (hour for hour in self.hour_set), name="quantity_regulation_up_deployed"
         )
-        # Continuous variable for regulation down quantity at hour i in day j month k
+        # Continuous variable for regulation down quantity  deployed at hour i in day j month k
         self.quantity_regulation_down = self.model.continuous_var_dict(
-            (hour for hour in self.hour_set), name="quantity_regulation_down"
-        )
+            (hour for hour in self.hour_set), name="quantity_regulation_down_deployed")
         # Continuous variable for state of charge at hour i in day j month k
         self.state_of_charge = self.model.continuous_var_dict(
             (hour for hour in self.hour_set), name="state_of_charge"
@@ -84,7 +92,7 @@ class OptimizationModel():
             regulation_up_params (dict): Dictionary of regulation up prices.
             regulation_down_params (dict): Dictionary of regulation down prices.
         """
-        # Maximizing profit by balancing discharge, charge, reg up, and reg down
+        # Maximizing profit by balancing discharge, charge, reg up, and reg down deployed and capacities
         self.model.maximize(
             self.model.sum(
                 self.quantity_discharge[hour] * energy_price_params[self.month, hour,self.day ]
@@ -98,19 +106,30 @@ class OptimizationModel():
                 self.quantity_regulation_up[hour] * regulation_up_params[self.month, hour,self.day ]
                 for hour in self.hour_set
             )
-            + self.model.sum(
+            - self.model.sum(
                 self.quantity_regulation_down[hour] * regulation_down_params[self.month, hour,self.day ]
+                for hour in self.hour_set
+            )
+            + self.model.sum(
+                self.quantity_regulation_up_capcity[hour] * regulation_up_params[self.month, hour,self.day ]
+                for hour in self.hour_set
+            )
+            + self.model.sum(
+                self.quantity_regulation_down_capacity[hour] * regulation_down_params[self.month, hour,self.day ]
                 for hour in self.hour_set
             )
         )
 
+    
+
     def add_constraints(
         self,
-        interval: list,
-        initial_charge: float,
-        missing_energy: list,
-        missing_regulation_up: list,
-        missing_regulation_down: list,
+        interval: list, # List of tuples representing time intervals.
+        initial_charge: float, # Initial charge of the battery at initial day and hour.
+        missing_energy: list, # List of tuples representing intervals with missing energy data.
+        missing_regulation_up: list, # List of tuples representing intervals with missing regulation up data.
+        missing_regulation_down: list, # List of tuples representing intervals with missing regulation down data.
+        past_day_state_of_charge: float, # The state of charge at the end of the previous day
     ):
         """
         Add constraints to the optimization model.
@@ -129,11 +148,9 @@ class OptimizationModel():
                     == self.state_of_charge[hour-1]
                     + self.lambda_c * self.quantity_charge[hour]
                     - self.lambda_c * self.quantity_discharge[hour]
-                    + self.lambda_c
-                    * self.lambda_reg
+                    - self.lambda_c
                     * self.quantity_regulation_up[hour]
                     + self.lambda_c
-                    * self.lambda_reg
                     * self.quantity_regulation_down[hour],
                     f"state_of_charge_{self.month,hour,self.day}",
                 )
@@ -142,12 +159,13 @@ class OptimizationModel():
             )
             for hour in self.hour_set
         ]
+
         # State of charge initial values : the initial state of charge at the beginning of each day equals the state of charge at the end of the previous day
         # Assumtion is that no charge loss happen due to environment condistions
         [
             (
                 self.model.add_constraint(
-                    self.state_of_charge[self.hour_set[0]] == initial_charge,
+                    self.state_of_charge[self.hour_set[0]] == past_day_state_of_charge,
                     f"initial_state_of_charge{self.month,self.day}",
                 )
                 if self.day > 1
@@ -212,6 +230,33 @@ class OptimizationModel():
             )
             for hour in self.hour_set
         ]
+
+        
+        # Relation of regulation up deployed and regulation up capacity 
+        [
+            
+                self.model.add_constraint(
+                    self.quantity_regulation_up[hour] -self.quantity_regulation_up_capcity[hour]* self.lambda_reg==0,
+                    f"deployment_of_reg_up_{self.month,self.day}",
+                )
+                for hour in self.hour_set
+            
+            
+        ]
+
+
+        #Relation of regulation down deployed and regulation down capacity 
+        [
+            
+                self.model.add_constraint(
+                    self.quantity_regulation_down[hour] -self.quantity_regulation_down_capacity[hour]* self.lambda_reg==0,
+                    f"deployment_of_reg_down_{self.month,self.day}",
+                )
+                for hour in self.hour_set
+            
+            
+        ]
+
         # Handling the missing hours in each day: if an hour is missed in data we will not bid that hour so the charge, discharge, regulation up and downs should be zero for that hour
         [
             self.model.add_constraint(
@@ -242,7 +287,7 @@ class OptimizationModel():
                 + self.model.sum(
                     self.quantity_regulation_down[hour] for hour in range(1, 25)
                 )
-                <= self.q_max_r,
+                <= self.max_charge,
                 f"charge_cycle_constraint_{self.month,self.day}",
             )
             
@@ -254,7 +299,7 @@ class OptimizationModel():
                 + self.model.sum(
                     self.quantity_regulation_up[hour] for hour in range(1, 25)
                 )
-                <= self.q_max_d,
+                <= self.max_charge,
                 f"discharge_cycle_constraint_{self.month,self.day}",
             )
         

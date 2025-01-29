@@ -21,7 +21,9 @@ class OptimizationWorkflow:
         self.energy_files = energy_files # List of energy files
         self.months = months # List of months
         self.initial_state_of_charge = initial_state_of_charge # Initial state of charge
+        self.previous_day_state_of_charge_value = 0 # Previous day state of charge value
 
+    # Add the validate_paths method here
     def validate_paths(self):
         """
         Ensures that the input and output paths exists. Create the output folder if it does not exist.
@@ -30,6 +32,8 @@ class OptimizationWorkflow:
             raise FileNotFoundError(f"Input path does not exist: {self.input_path}")
         if not os.path.exists(self.output_path):
             os.makedirs(self.output_path)
+
+    # Add the run_optimization_workflow method here
 
     def run_optimization_workflow(self):
         """
@@ -51,7 +55,7 @@ class OptimizationWorkflow:
                 
                 print(f"Running optimization for month {month}, day {day}")
                 # Perform optimization for the month and day
-                self.run_optimization(data_handler, optimization_model, month, day, set_of_months, set_of_days)
+                self.run_optimization(data_handler, optimization_model, month, day, set_of_months, set_of_days,self.previous_day_state_of_charge_value)
         # Update the database with output data
         data_process = DataProcess()
         data_process.connect_db(db_dir='data/database.db')
@@ -59,7 +63,7 @@ class OptimizationWorkflow:
         data_process.create_db_table_from_csv(
             csv_dir='data/output/schedule.csv',
             table_name='schedule',
-            column_formats={'Hour': 'INTEGER', 'Day': 'INTEGER', 'Month': 'INTEGER', 'Energy_Charged': 'REAL', 'Energy_Discharged': 'REAL', 'Regulation_UP': 'REAL', 'Regulation_Down': 'REAL'},
+            column_formats={'Hour': 'INTEGER', 'Day': 'INTEGER', 'Month': 'INTEGER', 'Energy_Charged': 'REAL', 'Energy_Discharged': 'REAL', 'Regulation_UP': 'REAL', 'Regulation_Down': 'REAL', 'Regulation_UP_Capacity': 'REAL', 'Regulation_Down_Capacity': 'REAL'},
             overwrite_table=True
         )
         # State of charge data
@@ -71,7 +75,7 @@ class OptimizationWorkflow:
         )
         data_process.disconnect_db()
 
-    def run_optimization(self, data_handler, optimization_model, month, day, set_of_months, set_of_days):
+    def run_optimization(self, data_handler, optimization_model, month, day, set_of_months, set_of_days,previous_day_state_of_charge_value):
         """
         Run the optimization model for a specific month and day.
         Args:
@@ -86,7 +90,7 @@ class OptimizationWorkflow:
         )
         # Optimize the model
         results = battery_optimization.run(
-            desired_months=month, initial_state_of_charge=self.initial_state_of_charge
+            month, self.initial_state_of_charge, previous_day_state_of_charge_value
         )
         # Unpack the results
         (
@@ -164,7 +168,7 @@ class OptimizationWorkflow:
                 "total_cycles.csv"
             ]
         )
-        output_handler.save_all_outputs()
+        self.previous_day_state_of_charge_value=output_handler.save_all_outputs()
         output_handler.print_summary()
 
 
@@ -193,7 +197,7 @@ if __name__ == "__main__":
     input_path = "./data/input"
     output_path = "./data/output"
     energy_files = ["energy_prices.csv", "regulation_prices.csv"]
-    months = [5,7,8,9]
+    months = sorted([5,7,8,9])
 
     # Initialize and run the optimization model
     optimization_workflow = OptimizationWorkflow(

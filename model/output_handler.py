@@ -68,6 +68,11 @@ class OutputHandler:
         total_cycles_daily=self.save_total_cycle_per_day()
         # Save the total cycles per month to a CSV file
         self.save_total_cycles()
+        # Retrieve the last row from the 'state of charge' column for the next day as the initial state of charge
+        state_of_chages = pd.read_csv(self.output_path + '/' + self.file_names[0])
+        previous_day_state_of_charge_value = state_of_chages['State_of_Charge'].iloc[-1]
+        return previous_day_state_of_charge_value
+
 
     def save_state_of_charge(self):
         """
@@ -80,9 +85,9 @@ class OutputHandler:
                     "Hour": i,
                     "Day": self.desired_days,
                     "Month": self.desired_months,
-                    "State_of_Charge": self.solution.get_value(
+                    "State_of_Charge": round(self.solution.get_value(
                         f"state_of_charge_{i}"
-                    ),
+                    ), 2)
                 }
                 for  i  in range(1,25)
             ]
@@ -108,18 +113,24 @@ class OutputHandler:
                     "Hour": i,
                     "Day": self.desired_days,
                     "Month": self.desired_months,
-                    "Energy_Charged": self.solution.get_value(
+                    "Energy_Charged": round(self.solution.get_value(
                         f"quantity_charge_{i}"
-                    ),
-                    "Energy_Discharged": self.solution.get_value(
+                    ), 2),
+                    "Energy_Discharged": round(self.solution.get_value(
                         f"quantity_discharge_{i}"
-                    ),
-                    "Regulation_UP": self.solution.get_value(
-                        f"quantity_regulation_up_{i}"
-                    ),
-                    "Regulation_Down": self.solution.get_value(
-                        f"quantity_regulation_down_{i}"
-                    ),
+                    ), 2),
+                    "Regulation_UP": round(self.solution.get_value(
+                        f"quantity_regulation_up_deployed_{i}"
+                    ), 2),
+                    "Regulation_Down": round(self.solution.get_value(
+                        f"quantity_regulation_down_deployed_{i}"
+                    ), 2),
+                    "Regulation_UP_Capacity": round(self.solution.get_value(
+                        f"quantity_regulation_up_capacity_{i}"
+                    ), 2),
+                    "Regulation_Down_Capacity":round(self.solution.get_value(
+                        f"quantity_regulation_down_capacity_{i}"
+                    ), 2),
                 }
                 for  i  in range(1,25)
             ]
@@ -152,28 +163,28 @@ class OutputHandler:
         # Precompute values for all time periods (1 to 24) across intervals (months)
         charge_values = {
         (self.desired_months, self.desired_days): sum(
-                self.solution.get_value(f"quantity_charge_{i}")
+                round(self.solution.get_value(f"quantity_charge_{i}"), 2)
                 for i in range(1, 25)
             )
             
         }
         reg_down_values = {
         (self.desired_months, self.desired_days): sum(
-                self.solution.get_value(f"quantity_regulation_down_{i}")
+                round(self.solution.get_value(f"quantity_regulation_down_deployed_{i}"), 2)
                 for i in range(1, 25)
             )
             
         }
         discharge_values = {
         (self.desired_months, self.desired_days): sum(
-                self.solution.get_value(f"quantity_discharge_{i}")
+                round(self.solution.get_value(f"quantity_discharge_{i}"), 2)
                 for i in range(1, 25)
             )
         
         }
         reg_up_values = {
         (self.desired_months, self.desired_days): sum(
-                self.solution.get_value(f"quantity_regulation_up_{i}")
+                round(self.solution.get_value(f"quantity_regulation_up_deployed_{i}"), 2)
                 for i in range(1, 25)
             )
         
@@ -181,8 +192,8 @@ class OutputHandler:
         # Combine precomputed values into a single dictionary for quick lookup
         full_charge_discharge = {
         (self.desired_months, self.desired_days): (
-                (charge_values[(self.desired_months, self.desired_days)] + reg_down_values[(self.desired_months, self.desired_days)] == self.q_max_r),
-                (discharge_values[(self.desired_months, self.desired_days)] + reg_up_values[(self.desired_months, self.desired_days)] == self.q_max_d),
+                (charge_values[(self.desired_months, self.desired_days)] + reg_down_values[(self.desired_months, self.desired_days)] == 2*self.q_max_r),
+                (discharge_values[(self.desired_months, self.desired_days)] + reg_up_values[(self.desired_months, self.desired_days)] == 2*self.q_max_d),
             )
         
         }

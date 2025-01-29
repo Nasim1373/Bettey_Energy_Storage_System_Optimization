@@ -109,7 +109,7 @@ if __name__ == "__main__":
     data.create_db_table_from_csv(
         csv_dir='data/output/schedule.csv',
         table_name='schedule',
-        column_formats={'Hour': 'INTEGER', 'Day': 'INTEGER', 'Month': 'INTEGER', 'Energy_Charged': 'REAL', 'Energy_Discharged': 'REAL', 'Regulation_UP': 'REAL', 'Regulation_Down': 'REAL'},
+        column_formats={'Hour': 'INTEGER', 'Day': 'INTEGER', 'Month': 'INTEGER', 'Energy_Charged': 'REAL', 'Energy_Discharged': 'REAL', 'Regulation_UP': 'REAL', 'Regulation_Down': 'REAL','Regulation_UP_Capacity': 'REAL', 'Regulation_Down_Capacity': 'REAL'},
         overwrite_table=True
     )
     # State of charge data

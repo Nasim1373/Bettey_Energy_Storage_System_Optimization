@@ -35,7 +35,7 @@ class BidOptimizationAPI:
             if not months_param:
                 return jsonify({"error": "Missing 'months' query parameter."}), 400
             # Convert months to a list of integers
-            months = [int(month.strip()) for month in months_param.split(',')]
+            months = sorted([int(month.strip()) for month in months_param.split(',')])
             # Convert initial state of charge to a float
             initial_state_of_charge = int(request.args.get('initial_state_of_charge', 100))
             # Initialize and execute the optimization model
